@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stock Status</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --success: #059669;
+            --bg: #f1f5f9;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .stock-card {
+            background: white;
+            width: 100%;
+            max-width: 360px;
+            border-radius: 28px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .header-bar {
+            height: 8px;
+            background: var(--accent);
+        }
+
+        .content {
+            padding: 40px 24px;
+        }
+
+        #name {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 0 0 8px 0;
+            line-height: 1.2;
+        }
+
+        .product-code {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+            display: block;
+        }
+
+        .balance-container {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .balance-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        #balance {
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--success);
+            margin: 0;
+        }
+
+        .unit {
+            font-size: 16px;
+            color: #64748b;
+            margin-left: 4px;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e2e8f0;
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="stock-card">
+    <div class="header-bar"></div>
+    <div class="content">
+        <h1 id="name"><span class="loading-spinner"></span></h1>
+        <span id="display-code" class="product-code">Checking...</span>
+
+        <div class="balance-container">
+            <div class="balance-label">Closing Balance</div>
+            <p id="balance">--</p>
+        </div>
+
+        <div class="footer">
+        <br>
+            <span id="timestamp"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+// ORIGINAL SCRIPT LOGIC
+const apiURL = "https://script.google.com/macros/s/AKfycbwqGL0IldmoV2oA343EwneSp59iPogBwrXb3qnRyUCpPjrpF9JajhLwZqdLiFvB3iSv6Q/exec";
+const params = new URLSearchParams(window.location.search);
+const productCode = params.get("code");
+
+// Update UI with the code from the URL immediately
+if(productCode) {
+    document.getElementById("display-code").innerText = "Code: " + productCode;
+}
+
+fetch(apiURL + "?code=" + productCode)
+.then(response => response.json())
+.then(data => {
+    if(data.product){
+        document.getElementById("name").innerText = data.product;
+        document.getElementById("balance").innerHTML = data.closingBalance + '<span class="unit">Qty</span>';
+        document.getElementById("timestamp").innerText = "Checked at: " + new Date().toLocaleTimeString();
+    } else {
+        document.getElementById("name").innerText = "Not Found";
+        document.getElementById("balance").innerText = "0";
+    }
+})
+.catch(error => {
+    document.getElementById("name").innerText = "Error";
+    document.getElementById("display-code").innerText = "Check Connection";
+});
+</script>
+
+</body>
+</html>
