@@ -2,160 +2,124 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Stock Status</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern QR Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root {
-            --primary: #0f172a;
-            --accent: #2563eb;
-            --success: #059669;
-            --bg: #f1f5f9;
+            --primary: #3b82f6;
+            --bg: #0f172a;
         }
-
         body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: white;
             margin: 0;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .stock-card {
-            background: white;
-            width: 100%;
-            max-width: 360px;
-            border-radius: 28px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+            height: 100vh;
             overflow: hidden;
+        }
+        #reader {
+            width: 100%;
+            max-width: 400px;
+            border: none !important;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .container {
+            width: 90%;
+            max-width: 450px;
             text-align: center;
         }
-
-        .header-bar {
-            height: 8px;
-            background: var(--accent);
+        .status-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 24px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
-        .content {
-            padding: 40px 24px;
+        #result-text {
+            word-break: break-all;
+            color: #94a3b8;
+            font-size: 0.9rem;
         }
-
-        #name {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--primary);
-            margin: 0 0 8px 0;
-            line-height: 1.2;
-        }
-
-        .product-code {
-            font-size: 14px;
-            color: #64748b;
+        .scan-button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
             font-weight: 600;
-            letter-spacing: 1px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .scan-button:active { transform: scale(0.95); }
+        /* Customizing the library's UI */
+        #reader__dashboard_section_csr button {
+            background-color: var(--primary) !important;
+            color: white !important;
+            border: none !important;
+            padding: 10px 20px !important;
+            border-radius: 8px !important;
             text-transform: uppercase;
-            margin-bottom: 30px;
-            display: block;
-        }
-
-        .balance-container {
-            background: #f8fafc;
-            border-radius: 20px;
-            padding: 24px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .balance-label {
             font-size: 12px;
-            font-weight: 700;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 4px;
+            font-weight: bold;
         }
-
-        #balance {
-            font-size: 42px;
-            font-weight: 800;
-            color: var(--success);
-            margin: 0;
-        }
-
-        .unit {
-            font-size: 16px;
-            color: #64748b;
-            margin-left: 4px;
-        }
-
-        .footer {
-            margin-top: 30px;
-            font-size: 12px;
-            color: #94a3b8;
-        }
-
-        .loading-spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid #e2e8f0;
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div class="stock-card">
-    <div class="header-bar"></div>
-    <div class="content">
-        <h1 id="name"><span class="loading-spinner"></span></h1>
-        <span id="display-code" class="product-code">Checking...</span>
+<div class="container">
+    <h2 style="margin-bottom: 8px;">QR Scanner</h2>
+    <p style="color: #64748b; margin-bottom: 24px;">Align the QR code within the frame</p>
 
-        <div class="balance-container">
-            <div class="balance-label">Closing Balance</div>
-            <p id="balance">--</p>
-        </div>
+    <div id="reader"></div>
 
-        <div class="footer">
-        <br>
-            <span id="timestamp"></span>
-        </div>
+    <div class="status-card">
+        <div id="result-header" style="font-weight: bold; margin-bottom: 8px;">Ready to Scan</div>
+        <div id="result-text">Waiting for a valid QR code...</div>
+        <button id="reset-btn" class="scan-button" style="display: none; margin-top: 15px;">Scan Again</button>
     </div>
 </div>
 
 <script>
-// ORIGINAL SCRIPT LOGIC
-const apiURL = "https://script.google.com/macros/s/AKfycbwqGL0IldmoV2oA343EwneSp59iPogBwrXb3qnRyUCpPjrpF9JajhLwZqdLiFvB3iSv6Q/exec";
-const params = new URLSearchParams(window.location.search);
-const productCode = params.get("code");
+    const html5QrCode = new Html5Qrcode("reader");
+    const resultText = document.getElementById('result-text');
+    const resultHeader = document.getElementById('result-header');
+    const resetBtn = document.getElementById('reset-btn');
 
-// Update UI with the code from the URL immediately
-if(productCode) {
-    document.getElementById("display-code").innerText = "Code: " + productCode;
-}
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-fetch(apiURL + "?code=" + productCode)
-.then(response => response.json())
-.then(data => {
-    if(data.product){
-        document.getElementById("name").innerText = data.product;
-        document.getElementById("balance").innerHTML = data.closingBalance + '<span class="unit">Qty</span>';
-        document.getElementById("timestamp").innerText = "Checked at: " + new Date().toLocaleTimeString();
-    } else {
-        document.getElementById("name").innerText = "Not Found";
-        document.getElementById("balance").innerText = "0";
-    }
-})
-.catch(error => {
-    document.getElementById("name").innerText = "Error";
-    document.getElementById("display-code").innerText = "Check Connection";
-});
+    const onSuccess = (decodedText, decodedResult) => {
+        // Stop scanning after a successful read
+        html5QrCode.stop();
+        
+        resultHeader.innerText = "Success!";
+        resultHeader.style.color = "#4ade80";
+        resultText.innerText = decodedText;
+        resetBtn.style.display = "inline-block";
+        
+        // Vibrate for feedback
+        if (navigator.vibrate) navigator.vibrate(100);
+    };
+
+    const startScanner = () => {
+        resetBtn.style.display = "none";
+        resultHeader.innerText = "Scanning...";
+        resultHeader.style.color = "white";
+        resultText.innerText = "Point your camera at a QR code";
+        
+        html5QrCode.start({ facingMode: "environment" }, config, onSuccess);
+    };
+
+    resetBtn.addEventListener('click', startScanner);
+
+    // Initial Start
+    startScanner();
 </script>
 
 </body>
