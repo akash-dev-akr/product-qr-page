@@ -2,125 +2,137 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern QR Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Pro Scanner</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root {
-            --primary: #3b82f6;
-            --bg: #0f172a;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg);
-            color: white;
+        body, html {
             margin: 0;
+            padding: 0;
+            height: 100%;
+            background: #000;
+            font-family: sans-serif;
+            overflow: hidden;
+        }
+
+        /* 1. The Camera Container (Full Screen) */
+        #reader {
+            width: 100vw !important;
+            height: 100vh !important;
+            border: none !important;
+        }
+
+        /* 2. The Transparent Overlay Layer */
+        .scanner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            overflow: hidden;
+            pointer-events: none; /* Allows clicking through to camera controls if needed */
         }
-        #reader {
-            width: 100%;
-            max-width: 400px;
-            border: none !important;
+
+        /* 3. The Scanning Frame (The Green Corners) */
+        .scan-box {
+            width: 260px;
+            height: 260px;
+            position: relative;
+            box-shadow: 0 0 0 5000px rgba(0, 0, 0, 0.5); /* Dim surroundings */
             border-radius: 20px;
-            overflow: hidden;
         }
-        .container {
-            width: 90%;
-            max-width: 450px;
-            text-align: center;
+
+        /* Custom Green Corners */
+        .corner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #00ff88;
+            pointer-events: none;
         }
-        .status-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            padding: 20px;
-            border-radius: 24px;
-            margin-top: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .top-left { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 20px; }
+        .top-right { top: 0; right: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 20px; }
+        .bottom-left { bottom: 0; left: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 20px; }
+        .bottom-right { bottom: 0; right: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 20px; }
+
+        /* 4. The Moving Laser Line */
+        .laser {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #00ff88;
+            box-shadow: 0 0 15px #00ff88;
+            top: 0;
+            animation: scanMove 2s infinite ease-in-out;
         }
-        #result-text {
-            word-break: break-all;
-            color: #94a3b8;
-            font-size: 0.9rem;
+
+        @keyframes scanMove {
+            0% { top: 5%; }
+            50% { top: 95%; }
+            100% { top: 5%; }
         }
-        .scan-button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .scan-button:active { transform: scale(0.95); }
-        /* Customizing the library's UI */
-        #reader__dashboard_section_csr button {
-            background-color: var(--primary) !important;
-            color: white !important;
-            border: none !important;
-            padding: 10px 20px !important;
-            border-radius: 8px !important;
+
+        /* 5. Text & Icons */
+        .scan-label {
+            margin-top: 40px;
+            color: #fff;
             text-transform: uppercase;
-            font-size: 12px;
-            font-weight: bold;
+            letter-spacing: 2px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .torch-btn {
+            position: absolute;
+            top: 10%;
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 50%;
+            pointer-events: auto;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2 style="margin-bottom: 8px;">QR Scanner</h2>
-    <p style="color: #64748b; margin-bottom: 24px;">Align the QR code within the frame</p>
-
     <div id="reader"></div>
 
-    <div class="status-card">
-        <div id="result-header" style="font-weight: bold; margin-bottom: 8px;">Ready to Scan</div>
-        <div id="result-text">Waiting for a valid QR code...</div>
-        <button id="reset-btn" class="scan-button" style="display: none; margin-top: 15px;">Scan Again</button>
+    <div class="scanner-overlay">
+        <div class="torch-btn">🔦</div>
+        
+        <div class="scan-box">
+            <div class="laser"></div>
+            <div class="corner top-left"></div>
+            <div class="corner top-right"></div>
+            <div class="corner bottom-left"></div>
+            <div class="corner bottom-right"></div>
+        </div>
+
+        <div class="scan-label">Scanning for codes...</div>
     </div>
-</div>
 
-<script>
-    const html5QrCode = new Html5Qrcode("reader");
-    const resultText = document.getElementById('result-text');
-    const resultHeader = document.getElementById('result-header');
-    const resetBtn = document.getElementById('reset-btn');
-
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-    const onSuccess = (decodedText, decodedResult) => {
-        // Stop scanning after a successful read
-        html5QrCode.stop();
+    <script>
+        const html5QrCode = new Html5Qrcode("reader");
         
-        resultHeader.innerText = "Success!";
-        resultHeader.style.color = "#4ade80";
-        resultText.innerText = decodedText;
-        resetBtn.style.display = "inline-block";
-        
-        // Vibrate for feedback
-        if (navigator.vibrate) navigator.vibrate(100);
-    };
+        const config = { 
+            fps: 15, 
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0 
+        };
 
-    const startScanner = () => {
-        resetBtn.style.display = "none";
-        resultHeader.innerText = "Scanning...";
-        resultHeader.style.color = "white";
-        resultText.innerText = "Point your camera at a QR code";
-        
-        html5QrCode.start({ facingMode: "environment" }, config, onSuccess);
-    };
-
-    resetBtn.addEventListener('click', startScanner);
-
-    // Initial Start
-    startScanner();
-</script>
-
+        // Start Scanner
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            config,
+            (decodedText) => {
+                alert("Scanned: " + decodedText);
+                // logic for what happens after scan goes here
+            }
+        ).catch(err => console.error("Camera error:", err));
+    </script>
 </body>
 </html>
